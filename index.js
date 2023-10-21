@@ -13,7 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const pool = new Pool({
-  connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
+    connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
+  //connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
 });
 
 // Create the users table
