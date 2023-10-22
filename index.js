@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const pool = new Pool({
-    connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
-//   connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
+    //connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
+     connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
 });
 
 // Create the users table
@@ -140,20 +140,49 @@ app.get('/users/list', async (req, res) => {
 });
 
 
+app.get('/check-basket-assignment', async (req, res) => {
+    const { basketId } = req.query; // Assuming you pass basketId as a query parameter
+  
+    try {
+      // Check if the basket has been assigned to a user
+      const result = await pool.query(
+        'SELECT user_id FROM user_baskets WHERE basket_id = $1',
+        [basketId]
+      );
+  
+      if (result.rows.length > 0) {
+        // Basket is assigned to a user, return the user ID
+        res.status(200).json({ userId: result.rows[0].user_id , code: 1});
+      } else {
+        // Basket is not assigned to any user
+        res.status(404).json({ message: 'Basket is not assigned to any user' , code: 0,});
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error checking basket assignment' });
+    }
+  });
+
+  
 // Assign a shop basket to the user
 app.post('/assign-basket', async (req, res) => {
     const { userId, basketId } = req.body;
   
     try {
-      // Check if the user and the shop basket exist
-      const userExists = await pool.query('SELECT EXISTS (SELECT 1 FROM users WHERE user_id = $1)', [userId]);
-      const basketExists = await pool.query('SELECT EXISTS (SELECT 1 FROM shop_baskets WHERE basket_id = $1)', [basketId]);
+      // Check if the user is already assigned to another basket
+      const userAssignedToBasket = await pool.query(
+        'SELECT basket_id FROM user_baskets WHERE user_id = $1',
+        [userId]
+      );
   
-      if (userExists.rows[0].exists && basketExists.rows[0].exists) {
-        // Check if the shop basket is already assigned to a user
-        const basketAssigned = await pool.query('SELECT EXISTS (SELECT 1 FROM user_baskets WHERE basket_id = $1)', [basketId]);
+      if (userAssignedToBasket.rows.length > 0) {
+        res.status(400).json({ message: 'Assignment failed. User is already assigned to another basket.' });
+      } else {
+        // Check if the user and the shop basket exist
+        const userExists = await pool.query('SELECT EXISTS (SELECT 1 FROM users WHERE user_id = $1)', [userId]);
+        const basketExists = await pool.query('SELECT EXISTS (SELECT 1 FROM shop_baskets WHERE basket_id = $1)', [basketId]);
   
-        if (!basketAssigned.rows[0].exists) {
+        if (userExists.rows[0].exists && basketExists.rows[0].exists) {
           // Assign the shop basket to the user
           const result = await pool.query(
             'INSERT INTO user_baskets (user_id, basket_id) VALUES ($1, $2)',
@@ -162,16 +191,15 @@ app.post('/assign-basket', async (req, res) => {
   
           res.status(201).json({ message: 'Shop basket assigned to the user successfully.' });
         } else {
-          res.status(400).json({ message: 'Assignment failed. Shop basket is already assigned to a user.' });
+          res.status(400).json({ message: 'Assignment failed. User or shop basket does not exist.' });
         }
-      } else {
-        res.status(400).json({ message: 'Assignment failed. User or shop basket does not exist.' });
       }
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Error assigning shop basket to the user.' });
     }
   });
+  
 
   
 app.post('/signup', async (req, res) => {
