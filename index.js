@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 `;
 
-// Create the products table with product_id as UUID
+// Create the products table with product_id asUUID
 const createProductsTableQuery = `
 CREATE TABLE IF NOT EXISTS products (
   product_id VARCHAR(36) NOT NULL,
