@@ -299,14 +299,14 @@ app.post('/cart/add', async (req, res) => {
 });
 
 // Remove an item from the user's cart
-app.delete('/cart/remove/:userId/:productId', async (req, res) => {
-  const { userId, productId } = req.params;
+app.delete('/cart/remove/:userId/:productName', async (req, res) => {
+  const { userId, productName } = req.params;
 
   try {
-      // Attempt to remove the item from the user's cart in the database
+      // Attempt to remove the item from the user's cart in the database using product_name
       const result = await pool.query(
-          'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
-          [userId, productId]
+          'DELETE FROM cart WHERE user_id = $1 AND product_name = $2',
+          [userId, productName]
       );
 
       if (result.rowCount > 0) {
