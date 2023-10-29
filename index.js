@@ -280,23 +280,23 @@ app.post('/cart/items', async (req, res) => {
 
 // Add an item to the user's cart
 app.post('/cart/add', async (req, res) => {
-    const { userId, productId, quantity } = req.body;
+  const { userId, productId, quantity } = req.body;
 
-    try {
-        // Convert the incoming userId to the original UUID format
-        const userIdInUUIDFormat = uuid.parse(userId);
+  try {
+      // Convert the incoming userId to the original UUID format
+      const userIdInUUIDFormat = uuidv4.parse(userId);
 
-        // Add the item to the user's cart in the database
-        const result = await pool.query(
-            'INSERT INTO cart (user_id, product_id, quantity) VALUES ($1, $2, $3)',
-            [userIdInUUIDFormat, productId, quantity]
-        );
+      // Add the item to the user's cart in the database
+      const result = await pool.query(
+          'INSERT INTO cart (user_id, product_id, quantity) VALUES ($1, $2, $3)',
+          [userIdInUUIDFormat, productId, quantity]
+      );
 
-        res.status(200).json({ message: 'Item added to cart successfully.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error adding item to cart.' });
-    }
+      res.status(200).json({ message: 'Item added to cart successfully.' });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error adding item to cart.' });
+  }
 });
 
 // Remove an item from the user's cart
