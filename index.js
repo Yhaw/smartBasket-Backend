@@ -249,31 +249,32 @@ app.get('/logout', (req, res) => {
 
 // Get items in the user's cart
 app.post('/cart/items', async (req, res) => {
-    const { userId } = req.body;
-  
-    try {
-      // Retrieve the items in the user's cart with product name, price, and quantity
-      const cartItems = await pool.query(
-        'SELECT p.product_name, p.price, c.quantity FROM cart c ' +
-        'INNER JOIN products p ON c.product_id = p.product_id ' +
-        'WHERE c.user_id = $1',
-        [userId]
-      );
-  
-      // Calculate the total price
-      let total = 0;
-      cartItems.rows.forEach((item) => {
-        const itemPrice = parseFloat(item.price);
-        const itemQuantity = parseInt(item.quantity);
-        total += itemPrice * itemQuantity;
-      });
-  
-      res.status(200).json({ items: cartItems.rows, total });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error getting cart items and calculating total price.' });
-    }
-  });
+  const { userId } = req.body;
+
+  try {
+    // Retrieve the items in the user's cart with product_id, product_name, price, and quantity
+    const cartItems = await pool.query(
+      'SELECT c.product_id, p.product_name, p.price, c.quantity FROM cart c ' +
+      'INNER JOIN products p ON c.product_id = p.product_id ' +
+      'WHERE c.user_id = $1',
+      [userId]
+    );
+
+    // Calculate the total price
+    let total = 0;
+    cartItems.rows.forEach((item) => {
+      const itemPrice = parseFloat(item.price);
+      const itemQuantity = parseInt(item.quantity);
+      total += itemPrice * itemQuantity;
+    });
+
+    res.status(200).json({ items: cartItems.rows, total });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error getting cart items and calculating total price.' });
+  }
+});
+
   
 
 
@@ -299,28 +300,23 @@ app.post('/cart/add', async (req, res) => {
 });
 
 // Remove an item from the user's cart
-app.delete('/cart/remove/:userId/:productName', async (req, res) => {
-  const { userId, productName } = req.params;
+app.delete('/cart/remove/:userId/:productID', async (req, res) => {
+  const { userId, productID } = req.params;
 
   try {
-      // Attempt to remove the item from the user's cart in the database using product_name
+      // Remove the item from the user's cart in the database using the product_id
       const result = await pool.query(
-          'DELETE FROM cart WHERE user_id = $1 AND product_name = $2',
-          [userId, productName]
+          'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
+          [userId, productID]
       );
 
-      if (result.rowCount > 0) {
-          // If one or more rows were affected, the removal was successful
-          res.status(200).json({ message: 'Item removed from cart successfully' });
-      } else {
-          // If no rows were affected, the item was not found in the cart
-          res.status(404).json({ message: 'Item not found in the cart' });
-      }
+      res.status(200).json({ message: 'Item removed from cart successfully.' });
   } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Error removing item from cart' });
+      res.status(500).json({ message: 'Error removing item from cart.' });
   }
 });
+
 
 
 // Clear the user's cart
