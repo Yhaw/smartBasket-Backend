@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const pool = new Pool({
-    connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
-     //connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
+    // connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
+     connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
 });
 
 // Create the users table
@@ -282,10 +282,13 @@ app.post('/cart/add', async (req, res) => {
     const { userId, productId, quantity } = req.body;
 
     try {
+        // Convert the incoming userId to the original UUID format
+        const userIdInUUIDFormat = uuid.parse(userId);
+
         // Add the item to the user's cart in the database
         const result = await pool.query(
             'INSERT INTO cart (user_id, product_id, quantity) VALUES ($1, $2, $3)',
-            [userId, productId, quantity]
+            [userIdInUUIDFormat, productId, quantity]
         );
 
         res.status(200).json({ message: 'Item added to cart successfully.' });
@@ -297,21 +300,28 @@ app.post('/cart/add', async (req, res) => {
 
 // Remove an item from the user's cart
 app.delete('/cart/remove/:userId/:productId', async (req, res) => {
-    const { userId, productId } = req.params;
+  const { userId, productId } = req.params;
 
-    try {
-        // Remove the item from the user's cart in the database
-        const result = await pool.query(
-            'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
-            [userId, productId]
-        );
+  try {
+      // Attempt to remove the item from the user's cart in the database
+      const result = await pool.query(
+          'DELETE FROM cart WHERE user_id = $1 AND product_id = $2',
+          [userId, productId]
+      );
 
-        res.status(200).json({ message: 'Item removed from cart successfully.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error removing item from cart.' });
-    }
+      if (result.rowCount > 0) {
+          // If one or more rows were affected, the removal was successful
+          res.status(200).json({ message: 'Item removed from cart successfully' });
+      } else {
+          // If no rows were affected, the item was not found in the cart
+          res.status(404).json({ message: 'Item not found in the cart' });
+      }
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error removing item from cart' });
+  }
 });
+
 
 // Clear the user's cart
 app.delete('/cart/clear/:userId', async (req, res) => {
