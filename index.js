@@ -284,12 +284,12 @@ app.post('/cart/add', async (req, res) => {
 
   try {
       // Convert the incoming userId to the original UUID format
-      const userIdInUUIDFormat = uuidv4.parse(userId);
+     // const userIdInUUIDFormat = uuidv4.parse(userId);
 
       // Add the item to the user's cart in the database
       const result = await pool.query(
           'INSERT INTO cart (user_id, product_id, quantity) VALUES ($1, $2, $3)',
-          [userIdInUUIDFormat, productId, quantity]
+          [userId , productId, quantity]
       );
 
       res.status(200).json({ message: 'Item added to cart successfully.' });
