@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const pool = new Pool({
-    // connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
-     connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
+     connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
+     //connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
 });
 
 // Create the users table
@@ -382,6 +382,67 @@ app.get('/products/list', async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Error listing products.' });
     }
+});
+
+app.post('/reset/cart', async (req, res) => {
+  try {
+    // Drop the cart table
+    await pool.query('DROP TABLE IF EXISTS cart');
+
+    // Recreate the cart table
+    await pool.query(createCartTableQuery); // Assuming createCartTableQuery is defined earlier in your code
+
+    res.status(200).json({ message: 'Cart database dropped and recreated successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error dropping and recreating the cart database.' });
+  }
+});
+
+// Drop and recreate the products database
+app.post('/reset/products', async (req, res) => {
+  try {
+    // Drop the products table
+    await pool.query('DROP TABLE IF EXISTS products');
+
+    // Recreate the products table
+    await pool.query(createProductsTableQuery); // Assuming createProductsTableQuery is defined earlier in your code
+
+    res.status(200).json({ message: 'Products database dropped and recreated successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error dropping and recreating the products database.' });
+  }
+});
+
+app.post('/reset/user_baskets', async (req, res) => {
+  try {
+    // Drop the user_baskets table
+    await pool.query('DROP TABLE IF EXISTS user_baskets');
+
+    // Recreate the user_baskets table
+    await pool.query(createUserBasketsTableQuery); // Assuming createUserBasketsTableQuery is defined earlier in your code
+
+    res.status(200).json({ message: 'User baskets database dropped and recreated successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error dropping and recreating the user_baskets database.' });
+  }
+});
+
+app.post('/reset/shop_baskets', async (req, res) => {
+  try {
+    // Drop the shop_baskets table
+    await pool.query('DROP TABLE IF EXISTS shop_baskets');
+
+    // Recreate the shop_baskets table
+    await pool.query(createShopBasketsTableQuery); // Assuming createShopBasketsTableQuery is defined earlier in your code
+
+    res.status(200).json({ message: 'Shop baskets database dropped and recreated successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error dropping and recreating the shop_baskets database.' });
+  }
 });
 
 app.listen(port, () => {
