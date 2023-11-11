@@ -145,8 +145,7 @@ app.get('/check-basket-assignment', async (req, res) => {
   const { basketId } = req.query;
 
   try {
-    // Check if the basket has been assigned to a user and the status is true
-    const result = await pool.query(
+     const result = await pool.query(
       'SELECT user_id, status FROM user_baskets WHERE basket_id = $1',
       [basketId]
     );
