@@ -341,22 +341,37 @@ app.delete('/cart/clear/:userId', async (req, res) => {
 });
 
 // Checkout the user's cart (implement payment processing as needed)
-app.post('/cart/checkout/:userId', async (req, res) => {
-    const userId = req.params.userId;
+app.post('/cart/checkout', async (req, res) => {
+  const { userId } = req.body;
 
-    try {
-        // Implement payment processing and order creation here
-        // ...
+  try {
+      // Implement payment processing and order creation here
+      // ...
 
-        // After a successful checkout, clear the user's cart
-        await pool.query('DELETE FROM cart WHERE user_id = $1', [userId]);
+      // Update the status in the user_baskets table if the user exists
+      const updateUserBasketStatusQuery = `
+          UPDATE user_baskets
+          SET status = true
+          WHERE user_id = $1
+          RETURNING basket_id
+      `;
+      
+      const result = await pool.query(updateUserBasketStatusQuery, [userId]);
 
-        res.status(200).json({ message: 'Checkout successful. Cart cleared.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Checkout failed.' });
-    }
+      if (result.rows.length > 0) {
+          // After a successful checkout, clear the user's cart
+          await pool.query('DELETE FROM cart WHERE user_id = $1', [userId]);
+
+          res.status(200).json({ message: 'Checkout successful. Cart cleared.', basketId: result.rows[0].basket_id });
+      } else {
+          res.status(404).json({ message: 'User not found or no basket assigned.', code: 0 });
+      }
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Checkout failed.' });
+  }
 });
+
 
 // Define routes for fetching product information, e.g., listing products, getting product details, etc.
 // ...
@@ -448,6 +463,28 @@ app.post('/reset/shop_baskets', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error dropping and recreating the shop_baskets database.' });
+  }
+});
+
+app.post('/remove-basket', async (req, res) => {
+  const { userId, basketId } = req.body;
+
+  try {
+    // Check if the user and the basket exist
+    const userExists = await pool.query('SELECT EXISTS (SELECT 1 FROM users WHERE user_id = $1)', [userId]);
+    const basketExists = await pool.query('SELECT EXISTS (SELECT 1 FROM user_baskets WHERE user_id = $1 AND basket_id = $2)', [userId, basketId]);
+
+    if (userExists.rows[0].exists && basketExists.rows[0].exists) {
+      // Remove the basket from the user_baskets table
+      await pool.query('DELETE FROM user_baskets WHERE user_id = $1 AND basket_id = $2', [userId, basketId]);
+
+      res.status(200).json({ message: 'Basket removed from user successfully.' });
+    } else {
+      res.status(400).json({ message: 'Removal failed. User or basket does not exist.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error removing basket from user.' });
   }
 });
 
