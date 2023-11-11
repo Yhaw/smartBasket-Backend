@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const pool = new Pool({
-     connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
-     //connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
+     //connectionString:'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a/cartdb'
+     connectionString: 'postgres://cartuser:MElQVIijb5i5PmtHKzPonnP1NgwdxiOm@dpg-ckq22phrfc9c73ei6bng-a.oregon-postgres.render.com/cartdb?ssl=true',
 });
 
 // Create the users table
@@ -56,7 +56,8 @@ const createUserBasketsTableQuery = `
 CREATE TABLE IF NOT EXISTS user_baskets (
   user_basket_id serial PRIMARY KEY,
   user_id UUID REFERENCES users(user_id),
-  basket_id VARCHAR(36) NOT NULL
+  basket_id VARCHAR(36) NOT NULL,
+  status BOOLEAN DEFAULT false
 );
 `;
 
@@ -141,27 +142,33 @@ app.get('/users/list', async (req, res) => {
 
 
 app.get('/check-basket-assignment', async (req, res) => {
-    const { basketId } = req.query; // Assuming you pass basketId as a query parameter
-  
-    try {
-      // Check if the basket has been assigned to a user
-      const result = await pool.query(
-        'SELECT user_id FROM user_baskets WHERE basket_id = $1',
-        [basketId]
-      );
-  
-      if (result.rows.length > 0) {
-        // Basket is assigned to a user, return the user ID
-        res.status(200).json({ userId: result.rows[0].user_id , code: 1});
+  const { basketId } = req.query;
+
+  try {
+    // Check if the basket has been assigned to a user and the status is true
+    const result = await pool.query(
+      'SELECT user_id, status FROM user_baskets WHERE basket_id = $1',
+      [basketId]
+    );
+
+    if (result.rows.length > 0) {
+      const { user_id, status } = result.rows[0];
+      if (status) {
+        // Basket is assigned to a user and status is true, return the user ID and code 1
+        res.status(200).json({ userId: user_id, code: 1 });
       } else {
-        // Basket is not assigned to any user
-        res.status(404).json({ message: 'Basket is not assigned to any user' , code: 0,});
+        // Basket is assigned to a user but status is false, return code 0
+        res.status(200).json({ userId: user_id, code: 0});
       }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error checking basket assignment' });
+    } else {
+      // Basket is not assigned to any user
+      res.status(404).json({ message: 'Basket is not assigned to any user'});
     }
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error checking basket assignment' });
+  }
+});
 
   
 // Assign a shop basket to the user
